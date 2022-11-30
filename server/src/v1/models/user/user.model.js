@@ -1,6 +1,7 @@
 const { Schema, model } = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { server } = require("../../config/system");
 
 const CLIENT_SCHEMA = [
   "_id",
@@ -34,10 +35,22 @@ const userSchema = new Schema(
       trim: true,
     },
     phone: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
+      full: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+      },
+      icc: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      nsn: {
+        type: String,
+        required: true,
+        trim: true,
+      },
     },
     password: {
       type: String,
@@ -137,7 +150,9 @@ userSchema.methods.isPhoneVerified = function () {
 userSchema.methods.genAuthToken = function () {
   const body = {
     sub: this._id.toHexString(),
-    password: this.password,
+    email: this.email,
+    phone: this.phone.full,
+    password: this.password + server.PASSWORD_SALT,
   };
 
   return jwt.sign(body, process.env["JWT_PRIVATE_KEY"]);

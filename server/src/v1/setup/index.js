@@ -1,7 +1,7 @@
 const setupSanitization = require("./sanitize");
 const setupMongoDB = require("./db");
 const routes = require("../routes");
-const config = require("../config/server");
+const { server } = require("../config/system");
 const {
   errorHandler,
   errorConverter,
@@ -20,7 +20,7 @@ module.exports = (app) => {
   app.use(errorConverter);
   app.use(errorHandler);
 
-  app.listen(config.PORT, () => {
-    console.log(`App is listening on port ${config.PORT}`);
+  app.listen(server.PORT, () => {
+    console.log(`App is listening on port ${server.PORT}`);
   });
 };

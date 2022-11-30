@@ -4,16 +4,22 @@ const httpStatus = require("http-status");
 const { ApiError } = require("../../middleware/apiError");
 const errors = require("../../config/errors");
 
-const storeFile = async (file) => {
+module.exports.storeFile = async (file, title = "") => {
   try {
     const readFile = Buffer.from(file.data, "base64");
-    const diskName = crypto.randomUUID();
-    const extension = file.mimetype.split("/")[1];
+
+    const diskName = title
+      ? `${title}_${getCurrentDate()}`
+      : crypto.randomUUID();
+
+    const nameParts = file.name.split(".");
+    const extension = nameParts[nameParts.length - 1];
+
     const name = `${diskName}.${extension}`;
     const path = `/${name}`;
     fs.writeFileSync(`./uploads${path}`, readFile, "utf8");
 
-    return { name, path };
+    return { originalName: file.name, name, path };
   } catch (err) {
     const statusCode = httpStatus.BAD_REQUEST;
     const message = errors.system.fileUploadError;
@@ -21,16 +27,9 @@ const storeFile = async (file) => {
   }
 };
 
-const deleteFile = async (filePath) => {
+module.exports.deleteFile = async (filePath) => {
   try {
-    // if (!file || !file.name || !file.path) {
-    //   const statusCode = httpStatus.BAD_REQUEST;
-    //   const message = errors.system.invalidFile;
-    //   throw new ApiError(statusCode, message);
-    // }
-
     fs.unlink(`./uploads${filePath}`, (err) => {});
-
     return true;
   } catch (err) {
     if (!(err instanceof ApiError)) {
@@ -43,7 +42,12 @@ const deleteFile = async (filePath) => {
   }
 };
 
-module.exports = {
-  storeFile,
-  deleteFile,
+const getCurrentDate = () => {
+  let strDate = new Date().toLocaleString();
+  strDate = strDate.split(", ");
+  let part1 = strDate[0];
+  let part2 = strDate[1].split(" ");
+  let part21 = part2[0].split(":").slice(0, 2).join(":");
+  let part22 = part2[1];
+  return `${part1}_${part21}_${part22}`;
 };

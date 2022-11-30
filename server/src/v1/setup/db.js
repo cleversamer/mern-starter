@@ -1,8 +1,8 @@
-const config = require("../config/server");
+const { server } = require("../config/system");
 const mongoose = require("mongoose");
 
 module.exports = () => {
-  const mongoURI = config.DATABASE_URI;
+  const mongoURI = server.DATABASE_URI;
 
   mongoose
     .connect(mongoURI)

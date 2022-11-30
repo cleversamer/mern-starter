@@ -4,6 +4,8 @@ const { check, validationResult } = require("express-validator");
 const httpStatus = require("http-status");
 const { ApiError } = require("../apiError");
 const errors = require("../../config/errors");
+const { server } = require("../../config/system");
+const countries = require("../../data/countries.json");
 
 const next = (req, res, next) => {
   const errors = validationResult(req);
@@ -61,7 +63,7 @@ const checkCode = check("code")
 const checkLanguage = check("lang")
   .notEmpty()
   .withMessage(errors.user.noLanguage)
-  .isIn(["en", "ar"])
+  .isIn(server.SUPPORTED_LANGUAGES)
   .withMessage(errors.user.unsupportedLanguage);
 
 const checkName = check("name")
@@ -76,23 +78,36 @@ const checkRole = (exceptAdmin = false) =>
     : check("role").isIn(SUPPORTED_ROLES).withMessage(errors.user.invalidRole);
 
 const checkPhone = (req, res, next) => {
-  let { phone } = req.body;
-
-  // Convert phone to string if it's not a string.
-  if (typeof phone !== "string") {
-    phone = String(phone);
-  }
-
-  // Check phone length (should = 10).
-  if (phone.length !== 10) {
+  if (typeof req.body.phone !== "object") {
     const statusCode = httpStatus.BAD_REQUEST;
     const message = errors.auth.invalidPhone;
     const err = new ApiError(statusCode, message);
     return next(err);
   }
 
-  // Check if it starts with 059 or 056
-  if (!phone.startsWith("059") && !phone.startsWith("056")) {
+  let { icc, nsn } = req.body.phone;
+
+  // Convert phone to string if it's not a string.
+  icc = String(icc);
+  nsn = String(nsn);
+
+  // Check if icc starts with a plus `+`
+  if (!icc.startsWith("+")) {
+    req.body.phone.icc = `+${icc}`;
+    icc = `+${icc}`;
+  }
+
+  // Check if phone's ICC is correct
+  const iccExist = countries.list.find((c) => c.icc === icc);
+  if (!iccExist) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidICC;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check if phone's NSN is >= 4 && <= 13
+  if (nsn.length < 4 || nsn.length > 13) {
     const statusCode = httpStatus.BAD_REQUEST;
     const message = errors.auth.invalidPhone;
     const err = new ApiError(statusCode, message);

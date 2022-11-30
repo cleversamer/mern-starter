@@ -38,9 +38,15 @@ const errorConverter = (err, req, res, next) => {
 };
 
 const unsupportedRouteHandler = (req, res, next) => {
-  const statusCode = httpStatus.NOT_FOUND;
+  const statusCode = httpStatus.BAD_GATEWAY;
   const message = errors.system.unsupportedRoute;
   throw new ApiError(statusCode, message);
+};
+
+const limitHandler = (req, res, next) => {
+  const statusCode = httpStatus.FORBIDDEN;
+  const message = errors.system.largeFile;
+  next(new ApiError(statusCode, message));
 };
 
 module.exports = {
@@ -48,4 +54,5 @@ module.exports = {
   errorHandler,
   errorConverter,
   unsupportedRouteHandler,
+  limitHandler,
 };

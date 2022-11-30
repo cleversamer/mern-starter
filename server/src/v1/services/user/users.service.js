@@ -14,7 +14,10 @@ module.exports.findUserByEmailOrPhone = async (
   try {
     // Find user by email or phone
     const user = await User.findOne({
-      $or: [{ email: { $eq: emailOrPhone } }, { phone: { $eq: emailOrPhone } }],
+      $or: [
+        { email: { $eq: emailOrPhone } },
+        { "phone.full": { $eq: emailOrPhone } },
+      ],
     });
 
     // Throwing error if no user found and `throwError = true`
@@ -374,9 +377,12 @@ const updateUserProfile = async (user, body) => {
     // Updating phone, setting phone as not verified,
     // update phone verification code, and sending
     // phone verification code to user's phone
-    if (phone && user.phone !== phone) {
+    const isPhoneEqual =
+      user.phone.icc === phone.icc && user.phone.nsn === phone.nsn;
+    if (phone && !isPhoneEqual) {
       // Checking if phone used
-      const phoneUsed = await this.findUserByEmailOrPhone(phone);
+      const fullPhone = `${phone.icc}${phone.nsn}`;
+      const phoneUsed = await this.findUserByEmailOrPhone(fullPhone);
       if (phoneUsed) {
         const statusCode = httpStatus.NOT_FOUND;
         const message = errors.auth.emailOrPhoneUsed;
@@ -386,7 +392,11 @@ const updateUserProfile = async (user, body) => {
       // Updating email, setting email as not verified,
       // update email verification code, and sending
       // email verification code to user's email
-      user.phone = phone;
+      user.phone = {
+        full: `${phone.icc}${phone.nsn}`,
+        icc: phone.icc,
+        nsn: phone.nsn,
+      };
       user.verified.phone = false;
       userChanged = true;
       user.updatePhoneVerificationCode();
@@ -394,7 +404,13 @@ const updateUserProfile = async (user, body) => {
       // TODO: send phone verification code to user's email.
     }
 
-    return userChanged ? await user.save() : user;
+    if (!userChanged) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user.notUpdated;
+      throw new ApiError(statusCode, message);
+    }
+
+    return await user.save();
   } catch (err) {
     throw err;
   }

@@ -16,7 +16,11 @@ module.exports.register = async (email, password, name, phone, role) => {
       name,
       email,
       password: hashed,
-      phone,
+      phone: {
+        full: `${phone.icc}${phone.nsn}`,
+        icc: phone.icc,
+        nsn: phone.nsn,
+      },
       role,
     });
 
