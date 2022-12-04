@@ -21,7 +21,7 @@ const types = {
         <center text-align="right">
           This is your email verification code which is valid for 10 minutes:
           <br /> 
-          ${user.emailVerificationCode.code}
+          ${user.verification.email.code}
           </center>
          <br />`,
 
@@ -29,7 +29,7 @@ const types = {
          <center text-align="right">
            هذا هو الكود الخاص بتفعيل بريدك الإلكتروني صالح لمدة 10 دقائق:
            <br /> 
-           ${user.emailVerificationCode.code}
+           ${user.verification.email.code}
            </center>
           <br />`,
       },
@@ -51,7 +51,7 @@ const types = {
         <center text-align="right">
           This is your reset password code which is valid for 10 minutes:
           <br /> 
-          ${user.resetPasswordCode.code}
+          ${user.verification.password.code}
           </center>
          <br />`,
 
@@ -59,7 +59,7 @@ const types = {
         <center text-align="right">
           هذا هو الكود الخاص باستعادة كلمة المرور صالح لمدة 10 دقائق:
           <br /> 
-          ${user.resetPasswordCode.code}
+          ${user.verification.password.code}
           </center>
          <br />`,
       },
@@ -81,7 +81,7 @@ const types = {
         <center text-align="right">
           This is your new email verification code which is valid for 10 minutes:
           <br /> 
-          ${user.emailVerificationCode.code}
+          ${user.verification.email.code}
           </center>
          <br />`,
 
@@ -89,7 +89,7 @@ const types = {
          <center text-align="right">
            هذا هو الكود الخاص بتفعيل بريدك الإلكتروني الجديد صالح لمدة 10 دقائق:
            <br /> 
-           ${user.emailVerificationCode.code}
+           ${user.verification.email.code}
            </center>
           <br />`,
       },

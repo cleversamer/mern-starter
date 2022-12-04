@@ -5,9 +5,16 @@ const _ = require("lodash");
 
 module.exports.register = async (req, res, next) => {
   try {
-    const { lang, name, email, phone, password, role } = req.body;
+    const { lang, name, email, phone, password, role, deviceToken } = req.body;
 
-    const user = await authService.register(email, password, name, phone, role);
+    const user = await authService.register(
+      email,
+      password,
+      name,
+      phone,
+      role,
+      deviceToken
+    );
 
     await emailService.registerEmail(lang, email, user);
 
@@ -26,9 +33,9 @@ module.exports.register = async (req, res, next) => {
 
 module.exports.login = async (req, res, next) => {
   try {
-    const { emailOrPhone, password } = req.body;
+    const { emailOrPhone, password, deviceToken } = req.body;
 
-    const user = await authService.login(emailOrPhone, password);
+    const user = await authService.login(emailOrPhone, password, deviceToken);
 
     const response = {
       user: _.pick(user, CLIENT_SCHEMA),

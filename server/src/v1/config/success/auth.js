@@ -1,18 +1,22 @@
 module.exports = Object.freeze({
   emailVerificationCodeSent: {
     en: "Verification code has been sent to your email",
-    ar: "تم ارسال كود التفعيل إلى بريدك الإلكتروني",
+    ar: "تم إرسال كود التفعيل إلى بريدك الإلكتروني",
   },
   phoneVerificationCodeSent: {
     en: "Verification code has been sent to your phone",
-    ar: "تم ارسال كود التفعيل إلى هاتفك",
+    ar: "تم إرسال كود التفعيل إلى رقم هاتفك",
   },
   passwordResetCodeSentToEmail: {
     en: "Password reset code has been sent to your email",
-    ar: "تم ارسال كود استعادة كلمة المرور إلى بريدك الإلكتروني",
+    ar: "تم إرسال كود إستعادة كلمة المرور إلى بريدك الإلكتروني",
   },
   passwordResetCodeSentToPhone: {
     en: "Password reset code has been sent to your phone",
-    ar: "تم ارسال كود استعادة كلمة المرور إلى رقم هاتفك",
+    ar: "تم إرسال كود إستعادة كلمة المرور إلى رقم هاتفك",
+  },
+  notificationSent: {
+    en: "Notification has been sent to users",
+    ar: "تم إرسال الاشعار للمستخدمين",
   },
 });

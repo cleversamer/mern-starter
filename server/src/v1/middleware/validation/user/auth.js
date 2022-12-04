@@ -5,6 +5,7 @@ const commonMiddleware = require("../common");
 const loginValidator = [
   commonMiddleware.checkEmailOrPhone,
   commonMiddleware.checkPassword,
+  commonMiddleware.checkDeviceToken,
   commonMiddleware.next,
 ];
 
@@ -15,6 +16,7 @@ const registerValidator = [
   commonMiddleware.checkPhone,
   commonMiddleware.checkPassword,
   commonMiddleware.checkRole(true),
+  commonMiddleware.checkDeviceToken,
   commonMiddleware.next,
 ];
 

@@ -16,10 +16,13 @@ const jwtVerify = async (payload, done) => {
     // Check if phone is correct
 
     const user = await User.findById(payload.sub);
+
+    const tokenPassword = payload.password.substring(0, user.password.length);
     const tokenPasswordSalt = payload.password.substring(user.password.length);
 
     const unauthorized =
       !user ||
+      tokenPassword !== user.password ||
       tokenPasswordSalt !== server.PASSWORD_SALT ||
       payload.email !== user.email ||
       payload.phone !== user.phone.full;

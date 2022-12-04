@@ -56,6 +56,18 @@ router.patch(
   usersController.updateProfile
 );
 
+router.post(
+  "/send-notification",
+  auth("createAny", "notification"),
+  usersController.sendNotification
+);
+
+router.get(
+  "/see-notifications",
+  auth("readOwn", "notification"),
+  usersController.seeNotifications
+);
+
 ////////////// ADMIN APIs //////////////
 router.patch(
   "/admin/update-profile",

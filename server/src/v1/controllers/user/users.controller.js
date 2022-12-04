@@ -3,6 +3,7 @@ const _ = require("lodash");
 const { CLIENT_SCHEMA } = require("../../models/user/user.model");
 const { usersService } = require("../../services");
 const success = require("../../config/success");
+const errors = require("../../config/errors");
 
 module.exports.isAuth = async (req, res, next) => {
   try {
@@ -67,7 +68,10 @@ module.exports.changePassword = async (req, res, next) => {
 
 module.exports.sendForgotPasswordCode = async (req, res, next) => {
   try {
-    const { emailOrPhone, sendTo, lang } = req.query;
+    let { emailOrPhone, sendTo, lang } = req.query;
+    if (emailOrPhone.startsWith(" ")) {
+      emailOrPhone = `+${emailOrPhone.trim()}`;
+    }
 
     await usersService.sendForgotPasswordCode(emailOrPhone, sendTo, lang);
 
@@ -104,22 +108,22 @@ module.exports.handleForgotPassword = async (req, res, next) => {
 module.exports.updateProfile = async (req, res, next) => {
   try {
     const user = req.user;
-    const { name, email, phone, password, lang } = req.body;
+    const { name, email, phone, lang } = req.body;
     const avatar = req?.files?.avatar || null;
 
-    const updatedUser = await usersService.updateProfile(
+    const info = await usersService.updateProfile(
       lang,
       user,
       name,
       email,
-      password,
       phone,
       avatar
     );
 
     const response = {
-      user: _.pick(updatedUser, CLIENT_SCHEMA),
-      token: updatedUser.genAuthToken(),
+      user: _.pick(info.newUser, CLIENT_SCHEMA),
+      changes: info.changes,
+      token: info.newUser.genAuthToken(),
     };
 
     res.status(httpStatus.CREATED).json(response);
@@ -128,30 +132,62 @@ module.exports.updateProfile = async (req, res, next) => {
   }
 };
 
+module.exports.sendNotification = async (req, res, next) => {
+  try {
+    const { userIds = [], title = "", body = "", data = {} } = req.body;
+
+    const callback = (err, response) => {
+      if (err) {
+        const statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+        const message = errors.system.notification;
+        const err = new ApiError(statusCode, message);
+        return next(err);
+      }
+
+      res.status(httpStatus.OK).json(success.auth.notificationSent);
+    };
+
+    await usersService.sendNotification(userIds, title, body, data, callback);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports.seeNotifications = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    user.seeNotifications();
+    await user.save();
+
+    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
+  } catch (err) {
+    next(err);
+  }
+};
+
 ///////////////////////////// ADMIN /////////////////////////////
 module.exports.updateUserProfile = async (req, res, next) => {
   try {
-    const {
-      lang = "ar",
-      emailOrPhone,
-      name,
-      email,
-      password,
-      phone,
-    } = req.body;
+    const { lang = "ar", emailOrPhone, name, email, phone } = req.body;
     const avatar = req?.files?.avatar || null;
 
-    const updatedUser = await usersService.updateUserProfile(
+    const info = await usersService.updateUserProfile(
       lang,
       emailOrPhone,
       name,
       email,
-      password,
       phone,
       avatar
     );
 
-    res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
+    const response = {
+      user: _.pick(info.newUser, CLIENT_SCHEMA),
+      changes: info.changes,
+      token: info.newUser.genAuthToken(),
+    };
+
+    res.status(httpStatus.CREATED).json(response);
   } catch (err) {
     next(err);
   }

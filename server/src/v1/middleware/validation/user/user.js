@@ -6,7 +6,6 @@ const validateUpdateProfile = [
   commonMiddleware.checkFile("avatar", ["png", "jpg", "jpeg"], false),
   commonMiddleware.conditionalCheck("email", commonMiddleware.checkEmail),
   commonMiddleware.conditionalCheck("phone", commonMiddleware.checkPhone),
-  commonMiddleware.conditionalCheck("password", commonMiddleware.checkPassword),
   commonMiddleware.next,
 ];
 

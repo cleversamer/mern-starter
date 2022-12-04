@@ -13,7 +13,7 @@ const SUPPORTED_LANGUAGES = ["en", "ar"];
 
 const MAX_REQUESTS = {
   PER_MILLISECONDS: 1 * 60 * 1000, //  => 1 minute
-  NUMBER: 20, // allowed number of requests
+  NUMBER: 10, // allowed number of requests
 };
 
 const PASSWORD_SALT = process.env["PASSWORD_SALT"];

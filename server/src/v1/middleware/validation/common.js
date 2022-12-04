@@ -20,28 +20,19 @@ const next = (req, res, next) => {
   next();
 };
 
-const checkEmailOrPhone = [
-  (req, res, next) => {
-    req.body.emailOrPhone = req.body?.emailOrPhone?.toLowerCase();
-    next();
-  },
+const checkDeviceToken = check("deviceToken")
+  .isLength({ min: 1, max: 1024 })
+  .withMessage(errors.auth.invalidDeviceToken);
 
-  check("emailOrPhone")
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
-];
+const checkEmailOrPhone = check("emailOrPhone")
+  .isLength({ min: 8, max: 256 })
+  .withMessage(errors.auth.invalidEmailOrPhone)
+  .bail();
 
-const checkEmail = [
-  (req, res, next) => {
-    req.body.email = req.body?.email?.toLowerCase();
-    next();
-  },
-
-  check("email").isEmail().withMessage(errors.auth.invalidEmail).bail(),
-
-  next,
-];
+const checkEmail = check("email")
+  .isEmail()
+  .withMessage(errors.auth.invalidEmail)
+  .bail();
 
 const checkPassword = check("password")
   .isLength({ min: 8, max: 32 })
@@ -56,7 +47,7 @@ const checkNewPassword = check("newPassword")
   .withMessage(errors.auth.invalidPassword);
 
 const checkCode = check("code")
-  .isLength({ min: 4, max: 4 })
+  .isLength({ min: 4, max: 8 })
   .isNumeric()
   .withMessage(errors.auth.invalidCode);
 
@@ -114,6 +105,18 @@ const checkPhone = (req, res, next) => {
     return next(err);
   }
 
+  // Check if phone's NSN contains only numbers
+  for (let i = 0; i < nsn.length; i++) {
+    const char = nsn.charCodeAt(i);
+
+    if (char < 48 || char > 57) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.phoneNotOnlyNumbers;
+      const err = new ApiError(statusCode, message);
+      return next(err);
+    }
+  }
+
   next();
 };
 
@@ -159,9 +162,8 @@ const checkMongoIdParam = (req, res, next) => {
   next();
 };
 
-const conditionalCheck = (key, checker) => (req, res, next) => {
-  return req.body[key] ? checker(req, res, next) : next();
-};
+const conditionalCheck = (key, checker) => (req, res, next) =>
+  req.body[key] ? checker(req, res, next) : next();
 
 const checkFile =
   (key, supportedTypes, compulsory = true) =>
@@ -204,4 +206,5 @@ module.exports = {
   checkLanguage,
   checkName,
   checkRole,
+  checkDeviceToken,
 };

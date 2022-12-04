@@ -10,12 +10,30 @@ const CLIENT_SCHEMA = [
   "email",
   "phone",
   "role",
+  "notifications",
   "verified",
   "createdAt",
   "lastLogin",
 ];
 
 const SUPPORTED_ROLES = ["user", "admin"];
+
+const verification = {
+  email: {
+    expiryInMins: 10,
+    codeLength: 6,
+  },
+  phone: {
+    expiryInMins: 10,
+    codeLength: 6,
+  },
+  password: {
+    expiryInMins: 10,
+    codeLength: 6,
+  },
+};
+
+const MAX_NOTIFICATIONS_COUNT = 10;
 
 const userSchema = new Schema(
   {
@@ -33,6 +51,7 @@ const userSchema = new Schema(
       required: true,
       unique: true,
       trim: true,
+      lowercase: true,
     },
     phone: {
       full: {
@@ -72,38 +91,48 @@ const userSchema = new Schema(
         default: false,
       },
     },
+    notifications: {
+      type: Array,
+      default: [],
+    },
+    deviceToken: {
+      type: String,
+      required: true,
+    },
     lastLogin: {
       type: String,
       default: new Date(),
     },
-    emailVerificationCode: {
-      code: {
-        type: String,
-        default: "",
+    verification: {
+      email: {
+        code: {
+          type: String,
+          default: "",
+        },
+        expiryDate: {
+          type: String,
+          default: "",
+        },
       },
-      expiresAt: {
-        type: String,
-        default: "",
+      phone: {
+        code: {
+          type: String,
+          default: "",
+        },
+        expiryDate: {
+          type: String,
+          default: "",
+        },
       },
-    },
-    phoneVerificationCode: {
-      code: {
-        type: String,
-        default: "",
-      },
-      expiresAt: {
-        type: String,
-        default: "",
-      },
-    },
-    resetPasswordCode: {
-      code: {
-        type: String,
-        default: "",
-      },
-      expiresAt: {
-        type: String,
-        default: "",
+      password: {
+        code: {
+          type: String,
+          default: "",
+        },
+        expiryDate: {
+          type: String,
+          default: "",
+        },
       },
     },
   },
@@ -113,40 +142,7 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.methods.updateEmailVerificationCode = function () {
-  const code = Math.floor(1000 + Math.random() * 9000);
-  const expiresAt = new Date() + 10 * 60 * 1000;
-  this.emailVerificationCode = { code, expiresAt };
-};
-
-userSchema.methods.updatePhoneVerificationCode = function () {
-  const code = Math.floor(1000 + Math.random() * 9000);
-  const expiresAt = new Date() + 10 * 60 * 1000;
-  this.phoneVerificationCode = { code, expiresAt };
-};
-
-userSchema.methods.generatePasswordResetCode = function () {
-  const code = Math.floor(1000 + Math.random() * 9000);
-  const expiresAt = new Date() + 10 * 60 * 1000;
-  this.resetPasswordCode = { code, expiresAt };
-};
-
-userSchema.methods.verifyEmail = function () {
-  this.verified.email = true;
-};
-
-userSchema.methods.isEmailVerified = function () {
-  return this.verified.email;
-};
-
-userSchema.methods.verifyPhone = function () {
-  this.verified.phone = true;
-};
-
-userSchema.methods.isPhoneVerified = function () {
-  return this.verified.phone;
-};
-
+//////////////////// User's General Methods ////////////////////
 userSchema.methods.genAuthToken = function () {
   const body = {
     sub: this._id.toHexString(),
@@ -156,6 +152,78 @@ userSchema.methods.genAuthToken = function () {
   };
 
   return jwt.sign(body, process.env["JWT_PRIVATE_KEY"]);
+};
+
+userSchema.methods.updateLastLogin = function () {
+  this.lastLogin = new Date();
+};
+
+userSchema.methods.genCode = function (length = 4) {
+  const possibleNums = Math.pow(10, length - 1);
+  return Math.floor(possibleNums + Math.random() * 9 * possibleNums);
+};
+
+userSchema.methods.updateCode = function (key) {
+  try {
+    const { codeLength, expiryInMins } = verification[key];
+
+    // Generate code
+    const code = this.genCode(codeLength);
+
+    // Generate expiry date
+    const mins = expiryInMins * 60 * 1000;
+    const expiryDate = new Date() + mins;
+
+    // Update email verification code
+    this.verification[key] = { code, expiryDate };
+  } catch (err) {
+    // TODO: write the error to db
+  }
+};
+
+userSchema.methods.isMatchingCode = function (key, code) {
+  try {
+    return this.verification[key].code == code;
+  } catch (err) {
+    // TODO: write the error to db
+    return false;
+  }
+};
+
+userSchema.methods.isValidCode = function (key) {
+  try {
+    const { expiryDate } = this.verification[key];
+    const { expiryInMins } = verification[key];
+
+    // Measure the difference between now and code's expiry date
+    const diff = new Date() - new Date(expiryDate);
+
+    // Calculate expiry mins in milliseconds
+    const time = expiryInMins * 60 * 1000;
+
+    // Return true if milliseconds are greater than the difference
+    // Otherwise, return false...
+    return diff <= time;
+  } catch (err) {
+    // TODO: write the error to db
+    return false;
+  }
+};
+
+userSchema.methods.isEmailVerified = function () {
+  return this.verified.email;
+};
+
+userSchema.methods.verifyEmail = function () {
+  this.verified.email = true;
+};
+
+userSchema.methods.isPhoneVerified = function () {
+  return this.verified.phone;
+};
+
+userSchema.methods.verifyPhone = function () {
+  this.verified.phone = true;
 };
 
 userSchema.methods.comparePassword = async function (candidate) {
@@ -168,25 +236,21 @@ userSchema.methods.updatePassword = async function (newPassword) {
   this.password = hashed;
 };
 
-userSchema.methods.isMatchingCode = function (key, code) {
-  try {
-    return this[key].code == code;
-  } catch (err) {
-    return false;
+userSchema.methods.addNotification = function (content) {
+  const notification = { content, seen: false };
+
+  if (this.notifications.length === 10) {
+    this.notifications.pop();
   }
+
+  this.notifications.unshift(notification);
 };
 
-userSchema.methods.isValidCode = function (key) {
-  try {
-    const diff = new Date() - new Date(this[key].expiresAt);
-    return diff <= 10 * 60 * 1000;
-  } catch (err) {
-    return false;
-  }
-};
-
-userSchema.methods.updateLastLogin = function () {
-  this.lastLogin = new Date();
+userSchema.methods.seeNotifications = function () {
+  this.notifications = this.notifications.map((n) => ({
+    ...n,
+    seen: true,
+  }));
 };
 
 const User = model("User", userSchema);

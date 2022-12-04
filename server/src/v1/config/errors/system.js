@@ -45,4 +45,8 @@ module.exports = Object.freeze({
     en: "Your device has been temporarily blocked",
     ar: "تم حظر جهازك مؤقتًا",
   },
+  notification: {
+    en: "Error sending notification",
+    ar: "حصل خطأ عند إرسال الإشعار",
+  },
 });

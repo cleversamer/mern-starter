@@ -5,7 +5,14 @@ const httpStatus = require("http-status");
 const errors = require("../../config/errors");
 const usersService = require("./users.service");
 
-module.exports.register = async (email, password, name, phone, role) => {
+module.exports.register = async (
+  email,
+  password,
+  name,
+  phone,
+  role,
+  deviceToken
+) => {
   try {
     // Hashing password
     const salt = await bcrypt.genSalt(10);
@@ -22,11 +29,12 @@ module.exports.register = async (email, password, name, phone, role) => {
         nsn: phone.nsn,
       },
       role,
+      deviceToken,
     });
 
     // Updating verification codes to be sent to the user
-    user.updateEmailVerificationCode();
-    user.updatePhoneVerificationCode();
+    user.updateCode("email");
+    user.updateCode("phone");
 
     return await user.save();
   } catch (err) {
@@ -40,7 +48,7 @@ module.exports.register = async (email, password, name, phone, role) => {
   }
 };
 
-module.exports.login = async (email, password) => {
+module.exports.login = async (email, password, deviceToken) => {
   try {
     const user = await usersService.findUserByEmailOrPhone(email);
 
@@ -59,6 +67,7 @@ module.exports.login = async (email, password) => {
     }
 
     user.updateLastLogin();
+    user.deviceToken = deviceToken;
 
     return await user.save();
   } catch (err) {

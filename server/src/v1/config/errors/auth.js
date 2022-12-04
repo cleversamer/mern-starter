@@ -51,6 +51,10 @@ module.exports = Object.freeze({
     en: "Old password is incorrect",
     ar: "كلمة المرور القديمة غير صحيحة",
   },
+  oldPasswordMatchNew: {
+    en: "New password matches old password",
+    ar: "كلمة المرور الجديدة تطابق كلمة المرور القديمة",
+  },
   invalidName: {
     en: "Name should be (8-64 characters) length",
     ar: "الإسم يجب أن يكون بين 8-64 حرفًا",
@@ -69,10 +73,18 @@ module.exports = Object.freeze({
   },
   invalidICC: {
     en: "Invalid international calling code (ICC)",
-    ar: "مقدمة الدولة غير صالحة",
+    ar: "مقدّمة الدولة غير صالحة",
+  },
+  phoneNotOnlyNumbers: {
+    en: "Phone number should contain only numbers",
+    ar: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
   },
   invalidPassword: {
     en: "Password should be (8-32 characters) length",
     ar: "كلمة المرور يجب أن تكون بين 8-32 حرفًا",
+  },
+  invalidDeviceToken: {
+    en: "Invalid device token",
+    ar: "معرّف الجهاز غير صالح",
   },
 });

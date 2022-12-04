@@ -14,4 +14,7 @@ module.exports = Object.freeze({
   password: {
     "update:own": ["*"],
   },
+  notification: {
+    "read:own": ["*"],
+  },
 });

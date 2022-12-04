@@ -5,4 +5,5 @@ module.exports = Object.freeze({
   emailVerificationCode: allRights,
   phoneVerificationCode: allRights,
   password: allRights,
+  notification: allRights,
 });
