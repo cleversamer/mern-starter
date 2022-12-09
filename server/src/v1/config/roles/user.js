@@ -16,5 +16,6 @@ module.exports = Object.freeze({
   },
   notification: {
     "read:own": ["*"],
+    "delete:own": ["*"],
   },
 });

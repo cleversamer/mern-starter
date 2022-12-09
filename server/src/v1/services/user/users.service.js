@@ -264,7 +264,7 @@ module.exports.sendNotification = async (
     const tokens = users.map((user) => {
       // Add the notification to user's notifications array
       // Save the user to the database
-      user.addNotification(title);
+      user.addNotification(title, body, data);
       user.save();
 
       return user.deviceToken;
@@ -279,6 +279,51 @@ module.exports.sendNotification = async (
     );
 
     return true;
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.seeNotifications = async (user) => {
+  try {
+    // Check all user's notifications
+    const isAllSeen = user.seeNotifications();
+
+    // Throw an error in case of all user's notifications
+    // are already seen
+    if (isAllSeen) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user.notificationsSeen;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Save the user
+    await user.save();
+
+    // Return user's notifications
+    return user.notifications;
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.clearNotifications = async (user) => {
+  try {
+    // Clear notifications
+    const isEmpty = user.clearNotifications();
+
+    // Check if notifications are empty
+    if (isEmpty) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user.noNotifications;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Save the user
+    await user.save();
+
+    // Return user's notifications
+    return user.notifications;
   } catch (err) {
     throw err;
   }

@@ -1,4 +1,5 @@
-module.exports.auth = require("./auth");
-module.exports.codes = require("./codes");
-module.exports.system = require("./system");
-module.exports.user = require("./user");
+module.exports.auth = require("./user/auth");
+module.exports.user = require("./user/user");
+
+module.exports.codes = require("./common/codes");
+module.exports.system = require("./common/system");

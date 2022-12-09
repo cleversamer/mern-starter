@@ -157,10 +157,21 @@ module.exports.seeNotifications = async (req, res, next) => {
   try {
     const user = req.user;
 
-    user.seeNotifications();
-    await user.save();
+    const notifications = await usersService.seeNotifications(user);
 
-    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
+    res.status(httpStatus.OK).json({ notifications });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports.clearNotifications = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    const notifications = await usersService.clearNotifications(user);
+
+    res.status(httpStatus.CREATED).json({ notifications });
   } catch (err) {
     next(err);
   }

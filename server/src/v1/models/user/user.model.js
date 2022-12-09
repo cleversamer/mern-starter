@@ -21,15 +21,15 @@ const SUPPORTED_ROLES = ["user", "admin"];
 const verification = {
   email: {
     expiryInMins: 10,
-    codeLength: 6,
+    codeLength: 4,
   },
   phone: {
     expiryInMins: 10,
-    codeLength: 6,
+    codeLength: 4,
   },
   password: {
     expiryInMins: 10,
-    codeLength: 6,
+    codeLength: 4,
   },
 };
 
@@ -144,14 +144,19 @@ const userSchema = new Schema(
 
 //////////////////// User's General Methods ////////////////////
 userSchema.methods.genAuthToken = function () {
-  const body = {
-    sub: this._id.toHexString(),
-    email: this.email,
-    phone: this.phone.full,
-    password: this.password + server.PASSWORD_SALT,
-  };
+  try {
+    const body = {
+      sub: this._id.toHexString(),
+      email: this.email,
+      phone: this.phone.full,
+      password: this.password + server.PASSWORD_SALT,
+    };
 
-  return jwt.sign(body, process.env["JWT_PRIVATE_KEY"]);
+    return jwt.sign(body, process.env["JWT_PRIVATE_KEY"]);
+  } catch (err) {
+    // TODO: write the error to the database
+    return "auth-token-error";
+  }
 };
 
 userSchema.methods.updateLastLogin = function () {
@@ -159,8 +164,12 @@ userSchema.methods.updateLastLogin = function () {
 };
 
 userSchema.methods.genCode = function (length = 4) {
-  const possibleNums = Math.pow(10, length - 1);
-  return Math.floor(possibleNums + Math.random() * 9 * possibleNums);
+  try {
+    const possibleNums = Math.pow(10, length - 1);
+    return Math.floor(possibleNums + Math.random() * 9 * possibleNums);
+  } catch (err) {
+    // TODO: write the error to the database
+  }
 };
 
 userSchema.methods.updateCode = function (key) {
@@ -177,7 +186,7 @@ userSchema.methods.updateCode = function (key) {
     // Update email verification code
     this.verification[key] = { code, expiryDate };
   } catch (err) {
-    // TODO: write the error to db
+    // TODO: write the error to the database
   }
 };
 
@@ -185,7 +194,7 @@ userSchema.methods.isMatchingCode = function (key, code) {
   try {
     return this.verification[key].code == code;
   } catch (err) {
-    // TODO: write the error to db
+    // TODO: write the error to the database
     return false;
   }
 };
@@ -205,7 +214,7 @@ userSchema.methods.isValidCode = function (key) {
     // Otherwise, return false...
     return diff <= time;
   } catch (err) {
-    // TODO: write the error to db
+    // TODO: write the error to the database
     return false;
   }
 };
@@ -227,30 +236,86 @@ userSchema.methods.verifyPhone = function () {
 };
 
 userSchema.methods.comparePassword = async function (candidate) {
-  return await bcrypt.compare(candidate, this.password);
+  try {
+    return await bcrypt.compare(candidate, this.password);
+  } catch (err) {
+    // TODO: write the error to the database
+    return false;
+  }
 };
 
 userSchema.methods.updatePassword = async function (newPassword) {
-  const salt = await bcrypt.genSalt(10);
-  const hashed = await bcrypt.hash(newPassword, salt);
-  this.password = hashed;
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(newPassword, salt);
+    this.password = hashed;
+  } catch (err) {
+    // TODO: write the error to the database
+  }
 };
 
-userSchema.methods.addNotification = function (content) {
-  const notification = { content, seen: false };
+userSchema.methods.addNotification = function (
+  title,
+  body,
+  data,
+  date = new Date()
+) {
+  try {
+    // Construct the notification
+    const notification = { title, body, data, date, seen: false };
 
-  if (this.notifications.length === 10) {
-    this.notifications.pop();
+    // Making sure that the max notifications count
+    // is considered.
+    this.notifications = this.notifications.slice(0, MAX_NOTIFICATIONS_COUNT);
+    if (this.notifications.length === MAX_NOTIFICATIONS_COUNT) {
+      this.notifications.pop();
+    }
+
+    // Add the notification to the beginning of the array
+    this.notifications.unshift(notification);
+  } catch (err) {
+    // TODO: write the error to the database
   }
-
-  this.notifications.unshift(notification);
 };
 
 userSchema.methods.seeNotifications = function () {
-  this.notifications = this.notifications.map((n) => ({
-    ...n,
-    seen: true,
-  }));
+  try {
+    // Return `true` if there are no notifications
+    // True means no new notifications
+    if (!this.notifications.length) {
+      return true;
+    }
+
+    // Declare a variable to track unseen notifications
+    let isAllSeen = true;
+
+    // Mark all notification as seen
+    this.notifications = this.notifications.map((n) => {
+      isAllSeen = isAllSeen && n.seen;
+
+      return {
+        ...n,
+        seen: true,
+      };
+    });
+
+    // Return the result
+    return isAllSeen;
+  } catch (err) {
+    // TODO: write the error to the database
+    return false;
+  }
+};
+
+userSchema.methods.clearNotifications = function () {
+  try {
+    const isEmpty = !this.notifications.length;
+    this.notifications = [];
+    return isEmpty;
+  } catch (err) {
+    // TODO: write the error to the database
+    return false;
+  }
 };
 
 const User = model("User", userSchema);

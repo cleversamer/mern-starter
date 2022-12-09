@@ -17,6 +17,10 @@ module.exports = Object.freeze({
   },
   notificationSent: {
     en: "Notification has been sent to users",
-    ar: "تم إرسال الاشعار للمستخدمين",
+    ar: "تم إرسال الإشعار إلى المستخدمين",
+  },
+  notificationsCleared: {
+    en: "Your notifications have been cleared",
+    ar: "تم مسح كل الإشعارات",
   },
 });

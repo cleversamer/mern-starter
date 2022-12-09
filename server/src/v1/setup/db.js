@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 module.exports = () => {
   const mongoURI = server.DATABASE_URI;
 
+  mongoose.set("strictQuery", false);
+
   mongoose
     .connect(mongoURI)
     .then((value) => {

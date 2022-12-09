@@ -56,16 +56,16 @@ router.patch(
   usersController.updateProfile
 );
 
-router.post(
-  "/send-notification",
-  auth("createAny", "notification"),
-  usersController.sendNotification
-);
-
 router.get(
   "/see-notifications",
   auth("readOwn", "notification"),
   usersController.seeNotifications
+);
+
+router.delete(
+  "/clear-notifications",
+  auth("deleteOwn", "notification"),
+  usersController.clearNotifications
 );
 
 ////////////// ADMIN APIs //////////////
@@ -95,6 +95,12 @@ router.get(
   auth("readAny", "user"),
   userValidator.validateFindUserByEmailOrPhone,
   usersController.findUserByEmailOrPhone
+);
+
+router.post(
+  "/send-notification",
+  auth("createAny", "notification"),
+  usersController.sendNotification
 );
 
 module.exports = router;

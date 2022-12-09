@@ -106,6 +106,7 @@ module.exports.countries = [
   { icc: "+36", name: "Hungary" },
   { icc: "+62", name: "Indonesia" },
   { icc: "+353", name: "Ireland" },
+  { icc: "+972", name: "Israel" },
   { icc: "+44", name: "Isle of Man" },
   { icc: "+91", name: "India" },
   { icc: "+246", name: "British Indian Ocean Territory" },
