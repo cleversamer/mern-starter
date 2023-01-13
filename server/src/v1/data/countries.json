@@ -1,6 +1,10 @@
 {
   "minNSN": 4,
   "maxNSN": 13,
+  "minICC": 2,
+  "maxICC": 5,
+  "minPhone": 6,
+  "maxPhone": 18,
   "list": [
     { "icc": "+376", "name": "Andorra" },
     { "icc": "+971", "name": "United Arab Emirates" },
@@ -106,7 +110,7 @@
     { "icc": "+36", "name": "Hungary" },
     { "icc": "+62", "name": "Indonesia" },
     { "icc": "+353", "name": "Ireland" },
-    { "icc": "+972", "name": "Israel" },
+    { "icc": "+972", "name": "Occupied Palestine" },
     { "icc": "+44", "name": "Isle of Man" },
     { "icc": "+91", "name": "India" },
     { "icc": "+246", "name": "British Indian Ocean Territory" },

@@ -2,8 +2,10 @@ const { Schema, model } = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { server } = require("../../config/system");
+const { user: validation } = require("../../config/models");
+const countriesData = require("../../data/countries");
 
-const CLIENT_SCHEMA = [
+const clientSchema = [
   "_id",
   "avatarURL",
   "name",
@@ -16,71 +18,90 @@ const CLIENT_SCHEMA = [
   "lastLogin",
 ];
 
-const SUPPORTED_ROLES = ["user", "admin"];
-
 const verification = {
   email: {
     expiryInMins: 10,
-    codeLength: 4,
+    codeLength: validation.verificationCode.exactLength,
   },
   phone: {
     expiryInMins: 10,
-    codeLength: 4,
+    codeLength: validation.verificationCode.exactLength,
   },
   password: {
     expiryInMins: 10,
-    codeLength: 4,
+    codeLength: validation.verificationCode.exactLength,
   },
 };
 
-const MAX_NOTIFICATIONS_COUNT = 10;
-
 const userSchema = new Schema(
   {
+    // The URL of user's avatar
     avatarURL: {
       type: String,
       default: "",
+      trim: true,
     },
+    // The full name of the user
     name: {
       type: String,
-      trim: true,
       required: true,
+      trim: true,
+      minLength: validation.name.minLength,
+      maxLength: validation.name.maxLength,
     },
+    // The email of the user
     email: {
       type: String,
       required: true,
       unique: true,
       trim: true,
       lowercase: true,
+      minLength: validation.email.minLength,
+      maxLength: validation.email.maxLength,
     },
+    // The phone of the user
     phone: {
+      // The full phone number (icc + nsn)
       full: {
         type: String,
         required: true,
         unique: true,
         trim: true,
+        minlength: countriesData.minPhone,
+        maxlength: countriesData.maxPhone,
       },
+      // The icc of user's phone
       icc: {
         type: String,
         required: true,
         trim: true,
+        enum: countriesData.countries.map((c) => c.icc),
+        minlength: countriesData.minICC,
+        maxlength: countriesData.maxICC,
       },
+      // The nsn of user's phone
       nsn: {
         type: String,
         required: true,
         trim: true,
+        minLength: countriesData.minNSN,
+        maxLength: countriesData.maxNSN,
       },
     },
+    // The hashed password of the user
     password: {
       type: String,
       trim: true,
       default: "",
     },
+    // The role of the user
     role: {
       type: String,
-      enum: SUPPORTED_ROLES,
-      default: "user",
+      enum: validation.roles,
+      default: validation.roles[0],
+      trim: true,
     },
+    // The email and phone verification status of the user
     verified: {
       email: {
         type: Boolean,
@@ -91,60 +112,76 @@ const userSchema = new Schema(
         default: false,
       },
     },
+    // All notifications that the user has received
     notifications: {
       type: Array,
       default: [],
     },
+    // The device token of user's phone
     deviceToken: {
       type: String,
       required: true,
+      trim: true,
+      minLength: validation.deviceToken.minLength,
+      maxLength: validation.deviceToken.maxLength,
     },
+    // The last login date of the user
     lastLogin: {
       type: String,
       default: new Date(),
     },
+    // The email, phone, and password verification codes
     verification: {
       email: {
         code: {
           type: String,
           default: "",
+          trim: true,
         },
         expiryDate: {
           type: String,
           default: "",
+          trim: true,
         },
       },
       phone: {
         code: {
           type: String,
           default: "",
+          trim: true,
         },
         expiryDate: {
           type: String,
           default: "",
+          trim: true,
         },
       },
       password: {
         code: {
           type: String,
           default: "",
+          trim: true,
         },
         expiryDate: {
           type: String,
           default: "",
+          trim: true,
         },
       },
     },
   },
   {
+    // To not avoid empty object when creating the document
     minimize: false,
+    // To automatically write creation/update timestamps
+    // Note: the update timestamp will be updated automatically
     timestamps: true,
   }
 );
 
-//////////////////// User's General Methods ////////////////////
 userSchema.methods.genAuthToken = function () {
   try {
+    // The body of the token (Encrypted)
     const body = {
       sub: this._id.toHexString(),
       email: this.email,
@@ -152,6 +189,7 @@ userSchema.methods.genAuthToken = function () {
       password: this.password + server.PASSWORD_SALT,
     };
 
+    // Generate a new token for this user with the above info
     return jwt.sign(body, process.env["JWT_PRIVATE_KEY"]);
   } catch (err) {
     // TODO: write the error to the database
@@ -160,11 +198,13 @@ userSchema.methods.genAuthToken = function () {
 };
 
 userSchema.methods.updateLastLogin = function () {
+  // Update user's last login
   this.lastLogin = new Date();
 };
 
 userSchema.methods.genCode = function (length = 4) {
   try {
+    // Generate a random numeric code with the specified length
     const possibleNums = Math.pow(10, length - 1);
     return Math.floor(possibleNums + Math.random() * 9 * possibleNums);
   } catch (err) {
@@ -174,6 +214,7 @@ userSchema.methods.genCode = function (length = 4) {
 
 userSchema.methods.updateCode = function (key) {
   try {
+    // Get verification type data
     const { codeLength, expiryInMins } = verification[key];
 
     // Generate code
@@ -192,6 +233,7 @@ userSchema.methods.updateCode = function (key) {
 
 userSchema.methods.isMatchingCode = function (key, code) {
   try {
+    // Return if the arg `code` === verification type code
     return this.verification[key].code == code;
   } catch (err) {
     // TODO: write the error to the database
@@ -201,7 +243,9 @@ userSchema.methods.isMatchingCode = function (key, code) {
 
 userSchema.methods.isValidCode = function (key) {
   try {
+    // Get expiry date for the verification type
     const { expiryDate } = this.verification[key];
+    // Get the allowed time of the verification type
     const { expiryInMins } = verification[key];
 
     // Measure the difference between now and code's expiry date
@@ -220,23 +264,29 @@ userSchema.methods.isValidCode = function (key) {
 };
 
 userSchema.methods.isEmailVerified = function () {
+  // Return if user's email is verified
   return this.verified.email;
 };
 
 userSchema.methods.verifyEmail = function () {
+  // Verify user's email
   this.verified.email = true;
 };
 
 userSchema.methods.isPhoneVerified = function () {
+  // Return if user's phone is verified
   return this.verified.phone;
 };
 
 userSchema.methods.verifyPhone = function () {
+  // Verify user's phone
   this.verified.phone = true;
 };
 
 userSchema.methods.comparePassword = async function (candidate) {
   try {
+    // Return if the `newPassword` arg === user's password
+    // after decrypting user's password
     return await bcrypt.compare(candidate, this.password);
   } catch (err) {
     // TODO: write the error to the database
@@ -246,8 +296,11 @@ userSchema.methods.comparePassword = async function (candidate) {
 
 userSchema.methods.updatePassword = async function (newPassword) {
   try {
+    // Generate a salt for hasing the password
     const salt = await bcrypt.genSalt(10);
+    // Hash the password
     const hashed = await bcrypt.hash(newPassword, salt);
+    // Update user's password
     this.password = hashed;
   } catch (err) {
     // TODO: write the error to the database
@@ -266,8 +319,9 @@ userSchema.methods.addNotification = function (
 
     // Making sure that the max notifications count
     // is considered.
-    this.notifications = this.notifications.slice(0, MAX_NOTIFICATIONS_COUNT);
-    if (this.notifications.length === MAX_NOTIFICATIONS_COUNT) {
+    const { maxNotificationsCount } = validation;
+    this.notifications = this.notifications.slice(0, maxNotificationsCount);
+    if (this.notifications.length === maxNotificationsCount) {
       this.notifications.pop();
     }
 
@@ -309,8 +363,11 @@ userSchema.methods.seeNotifications = function () {
 
 userSchema.methods.clearNotifications = function () {
   try {
+    // Check if notifications array is empty
     const isEmpty = !this.notifications.length;
+    // Empty the notifications array
     this.notifications = [];
+
     return isEmpty;
   } catch (err) {
     // TODO: write the error to the database
@@ -318,10 +375,10 @@ userSchema.methods.clearNotifications = function () {
   }
 };
 
+// Creating user model
 const User = model("User", userSchema);
 
 module.exports = {
   User,
-  CLIENT_SCHEMA,
-  SUPPORTED_ROLES,
+  clientSchema,
 };

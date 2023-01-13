@@ -1,6 +1,6 @@
 const httpStatus = require("http-status");
 const _ = require("lodash");
-const { CLIENT_SCHEMA } = require("../../models/user/user.model");
+const { clientSchema } = require("../../models/user/user.model");
 const { usersService } = require("../../services");
 const success = require("../../config/success");
 const errors = require("../../config/errors");
@@ -10,7 +10,7 @@ module.exports.isAuth = async (req, res, next) => {
     req.user.updateLastLogin();
     const user = await req.user.save();
 
-    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
+    res.status(httpStatus.OK).json(_.pick(user, clientSchema));
   } catch (err) {
     next(err);
   }
@@ -23,7 +23,7 @@ module.exports.verifyEmailOrPhone = (key) => async (req, res, next) => {
 
     const verifiedUser = await usersService.verifyEmailOrPhone(key, user, code);
 
-    res.status(httpStatus.OK).json(_.pick(verifiedUser, CLIENT_SCHEMA));
+    res.status(httpStatus.OK).json(_.pick(verifiedUser, clientSchema));
   } catch (err) {
     next(err);
   }
@@ -56,7 +56,7 @@ module.exports.changePassword = async (req, res, next) => {
     await usersService.changePassword(user, oldPassword, newPassword);
 
     const response = {
-      user: _.pick(user, CLIENT_SCHEMA),
+      user: _.pick(user, clientSchema),
       token: user.genAuthToken(),
     };
 
@@ -99,7 +99,7 @@ module.exports.handleForgotPassword = async (req, res, next) => {
       newPassword
     );
 
-    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
+    res.status(httpStatus.OK).json(_.pick(user, clientSchema));
   } catch (err) {
     next(err);
   }
@@ -121,7 +121,7 @@ module.exports.updateProfile = async (req, res, next) => {
     );
 
     const response = {
-      user: _.pick(info.newUser, CLIENT_SCHEMA),
+      user: _.pick(info.newUser, clientSchema),
       changes: info.changes,
       token: info.newUser.genAuthToken(),
     };
@@ -193,7 +193,7 @@ module.exports.updateUserProfile = async (req, res, next) => {
     );
 
     const response = {
-      user: _.pick(info.newUser, CLIENT_SCHEMA),
+      user: _.pick(info.newUser, clientSchema),
       changes: info.changes,
       token: info.newUser.genAuthToken(),
     };
@@ -210,7 +210,7 @@ module.exports.verifyUser = async (req, res, next) => {
 
     const updatedUser = await usersService.verifyUser(emailOrPhone);
 
-    res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
+    res.status(httpStatus.CREATED).json(_.pick(updatedUser, clientSchema));
   } catch (err) {
     next(err);
   }
@@ -222,7 +222,7 @@ module.exports.changeUserRole = async (req, res, next) => {
 
     const updatedUser = await usersService.changeUserRole(emailOrPhone, role);
 
-    res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
+    res.status(httpStatus.CREATED).json(_.pick(updatedUser, clientSchema));
   } catch (err) {
     next(err);
   }
@@ -238,7 +238,7 @@ module.exports.findUserByEmailOrPhone = async (req, res, next) => {
       true
     );
 
-    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
+    res.status(httpStatus.OK).json(_.pick(user, clientSchema));
   } catch (err) {
     next(err);
   }

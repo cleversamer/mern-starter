@@ -1,5 +1,9 @@
 module.exports.minNSN = 4;
 module.exports.maxNSN = 13;
+module.exports.minICC = 2;
+module.exports.maxICC = 5;
+module.exports.minPhone = this.minICC + this.minNSN;
+module.exports.maxPhone = this.maxICC + this.maxNSN;
 
 module.exports.countries = [
   { icc: "+376", name: "Andorra" },
@@ -106,7 +110,7 @@ module.exports.countries = [
   { icc: "+36", name: "Hungary" },
   { icc: "+62", name: "Indonesia" },
   { icc: "+353", name: "Ireland" },
-  { icc: "+972", name: "Israel" },
+  { icc: "+972", name: "Occupied Palestine" },
   { icc: "+44", name: "Isle of Man" },
   { icc: "+91", name: "India" },
   { icc: "+246", name: "British Indian Ocean Territory" },

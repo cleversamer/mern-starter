@@ -1,7 +1,15 @@
+const {
+  deviceToken,
+  email,
+  name,
+  verificationCode,
+  password,
+} = require("../../../config/models/user/user");
+
 module.exports = Object.freeze({
   invalidCode: {
-    en: "Invalid verification code",
-    ar: "كود التحقق غير صالح",
+    en: `Verification code should be ${verificationCode.exactLength} characters length`,
+    ar: `كود التحقق يجب أن يكون ${verificationCode.exactLength} حرفًا`,
   },
   incorrectCode: {
     en: "Incorrect verification code",
@@ -56,12 +64,12 @@ module.exports = Object.freeze({
     ar: "كلمة المرور الجديدة تطابق كلمة المرور القديمة",
   },
   invalidName: {
-    en: "Name should be (8-64 characters) length",
-    ar: "الإسم يجب أن يكون بين 8-64 حرفًا",
+    en: `Name should be ${name.minLength}-${name.maxLength} characters length`,
+    ar: `الإسم يجب أن يكون بين ${name.minLength}-${name.maxLength} حرفًا`,
   },
   invalidEmail: {
-    en: "Invalid email address",
-    ar: "البريد الإلكتروني غير صالح",
+    en: `Email should be valid and ${email.minLength}-${email.maxLength}`,
+    ar: `البريد الإلكرتروني يجب أن يكون بريد صالح بين ${email.minLength}-${email.maxLength} حرفًا`,
   },
   invalidEmailOrPhone: {
     en: "Invalid email or phone number",
@@ -80,11 +88,19 @@ module.exports = Object.freeze({
     ar: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
   },
   invalidPassword: {
-    en: "Password should be (8-32 characters) length",
-    ar: "كلمة المرور يجب أن تكون بين 8-32 حرفًا",
+    en: `Password should be ${password.minLength}-${password.maxLength} characters length`,
+    ar: `كلمة المرور يجب أن تكون بين ${password.minLength}-${password.maxLength} حرفًا`,
+  },
+  invalidOldPassword: {
+    en: `Old password should be ${password.minLength}-${password.maxLength} characters length`,
+    ar: `كلمة المرور القديمة يجب أن تكون بين ${password.minLength}-${password.maxLength} حرفًا`,
+  },
+  invalidNewPassword: {
+    en: `New password should be ${password.minLength}-${password.maxLength} characters length`,
+    ar: `كلمة المرور الجديدة يجب أن تكون بين ${password.minLength}-${password.maxLength} حرفًا`,
   },
   invalidDeviceToken: {
-    en: "Invalid device token",
-    ar: "معرّف الجهاز غير صالح",
+    en: `Device token should be ${deviceToken.minLength}-${deviceToken.maxLength} characters length`,
+    ar: `معرّف الجهاز يجب أن يكون بين ${deviceToken.minLength}-${deviceToken.maxLength} حرفًا`,
   },
 });

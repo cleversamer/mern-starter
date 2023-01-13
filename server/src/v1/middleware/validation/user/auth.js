@@ -1,5 +1,3 @@
-const { check } = require("express-validator");
-const errors = require("../../../config/errors");
 const commonMiddleware = require("../common");
 
 const loginValidator = [
@@ -34,26 +32,10 @@ const forgotPasswordValidator = [
 ];
 
 const getForgotPasswordCode = [
-  (req, res, next) => {
-    req.query.emailOrPhone = req.query?.emailOrPhone?.toLowerCase();
-    req.query.lang = req.query?.lang?.toLowerCase();
-    req.query.sendTo = req.query?.sendTo?.toLowerCase();
-
-    req.body.emailOrPhone = req.query.emailOrPhone;
-    req.body.lang = req.query.lang;
-    req.body.sendTo = req.query.sendTo;
-
-    next();
-  },
-
+  commonMiddleware.putQueryParamsInBody,
   commonMiddleware.checkEmailOrPhone,
-
   commonMiddleware.checkLanguage,
-
-  check("sendTo")
-    .isIn(["email", "phone"])
-    .withMessage(errors.user.unsupportedReceiverType),
-
+  commonMiddleware.checkSendTo,
   commonMiddleware.next,
 ];
 
@@ -62,14 +44,8 @@ const emailValidator = [commonMiddleware.checkEmail, commonMiddleware.next];
 const codeValidator = [commonMiddleware.checkCode, commonMiddleware.next];
 
 const resendCodeValidator = [
-  (req, res, next) => {
-    req.body.lang = req.query.lang;
-
-    next();
-  },
-
+  commonMiddleware.putQueryParamsInBody,
   commonMiddleware.checkLanguage,
-
   commonMiddleware.next,
 ];
 

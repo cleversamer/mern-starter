@@ -1,6 +1,6 @@
 const { authService, emailService } = require("../../services");
 const httpStatus = require("http-status");
-const { CLIENT_SCHEMA } = require("../../models/user/user.model");
+const { clientSchema } = require("../../models/user/user.model");
 const _ = require("lodash");
 
 module.exports.register = async (req, res, next) => {
@@ -21,7 +21,7 @@ module.exports.register = async (req, res, next) => {
     // TODO: send phone activation code to user's phone.
 
     const response = {
-      user: _.pick(user, CLIENT_SCHEMA),
+      user: _.pick(user, clientSchema),
       token: user.genAuthToken(),
     };
 
@@ -38,7 +38,7 @@ module.exports.login = async (req, res, next) => {
     const user = await authService.login(emailOrPhone, password, deviceToken);
 
     const response = {
-      user: _.pick(user, CLIENT_SCHEMA),
+      user: _.pick(user, clientSchema),
       token: user.genAuthToken(),
     };
 
