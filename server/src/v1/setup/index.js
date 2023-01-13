@@ -1,5 +1,6 @@
 const setupSanitization = require("./sanitize");
 const setupMongoDB = require("./db");
+const socket = require("./socket");
 const routes = require("../routes");
 const { server } = require("../config/system");
 const {
@@ -20,7 +21,9 @@ module.exports = (app) => {
   app.use(errorConverter);
   app.use(errorHandler);
 
-  app.listen(server.PORT, () => {
+  const expressServer = app.listen(server.PORT, () => {
     console.log(`App is listening on port ${server.PORT}`);
   });
+
+  socket(expressServer);
 };
