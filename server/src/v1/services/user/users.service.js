@@ -1,8 +1,8 @@
 const { User } = require("../../models/user/user.model");
 const jwt = require("jsonwebtoken");
 const httpStatus = require("http-status");
-const emailService = require("./email.service");
-const notificationsService = require("./notifications.service");
+const emailService = require("../messaging/email.service");
+const notificationsService = require("../messaging/notifications.service");
 const localStorage = require("../storage/localStorage.service");
 const { ApiError } = require("../../middleware/apiError");
 const errors = require("../../config/errors");
@@ -64,6 +64,7 @@ module.exports.verifyEmailOrPhone = async (key, user, code) => {
     // Ensure that key is correct
     key = key.toLowerCase();
     if (!["email", "phone"].includes(key)) {
+      // If not, then use the email
       key = "email";
     }
 
@@ -85,8 +86,8 @@ module.exports.verifyEmailOrPhone = async (key, user, code) => {
     }
 
     // Check if code is expired
-    const isValidCode = user.isValidCode(key);
-    if (!isValidCode) {
+    const isActiveCode = user.isValidCode(key);
+    if (!isActiveCode) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.auth.expiredCode;
       throw new ApiError(statusCode, message);
@@ -110,6 +111,7 @@ module.exports.resendEmailOrPhoneVerificationCode = async (key, user, lang) => {
     // Ensure that key is correct
     key = key.toLowerCase();
     if (!["email", "phone"].includes(key)) {
+      // If not, then use the email
       key = "email";
     }
 
@@ -123,14 +125,15 @@ module.exports.resendEmailOrPhoneVerificationCode = async (key, user, lang) => {
     }
 
     // Update user's email or phone verification code
-    // Send code in a message to user's email or phone
-    // Save user
     user.updateCode(key);
+
+    // Save user to the DB
     await user.save();
 
     // Sending email or phone verification code to user's email or phone
-    if (key === "email")
-      await emailService.registerEmail(lang, user.email, user);
+    if (key === "email") {
+      await emailService.sendRegisterEmail(lang, user.email, user);
+    }
 
     // TODO: send phone verification code to user's phone
   } catch (err) {
@@ -154,17 +157,17 @@ module.exports.changePassword = async (user, oldPassword, newPassword) => {
       throw new ApiError(statusCode, message);
     }
 
-    // Update password
+    // Update user's password
     await user.updatePassword(newPassword);
 
-    // Save user
+    // Save user to the DB
     await user.save();
   } catch (err) {
     throw err;
   }
 };
 
-module.exports.sendForgotPasswordCode = async (emailOrPhone, sendTo, lang) => {
+module.exports.sendResetPasswordCode = async (emailOrPhone, sendTo, lang) => {
   try {
     // Check if user exists
     const user = await this.findUserByEmailOrPhone(emailOrPhone);
@@ -174,15 +177,17 @@ module.exports.sendForgotPasswordCode = async (emailOrPhone, sendTo, lang) => {
       throw new ApiError(statusCode, message);
     }
 
-    // Update password reset code
+    // Update user's reset password code
     user.updateCode("password");
+
+    // Save user to the DB
     const updatedUser = await user.save();
 
-    // Send password reset code to phone or
-    if (sendTo === "phone") {
-      // TODO: send forgot password code to user's phone.
+    // Send reset password code to user's email or phone
+    if (sendTo === "email") {
+      await emailService.sendResetPasswordEmail(lang, user.email, updatedUser);
     } else {
-      await emailService.forgotPasswordEmail(lang, user.email, updatedUser);
+      // TODO: send reset password code to user's phone.
     }
   } catch (err) {
     throw err;
@@ -212,17 +217,20 @@ module.exports.resetPasswordWithCode = async (
     }
 
     // Check if code is expired
-    const isValidCode = user.isValidCode("password");
-    if (!isValidCode) {
+    const isActiveCode = user.isValidCode("password");
+    if (!isActiveCode) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.auth.expiredCode;
       throw new ApiError(statusCode, message);
     }
 
-    // Update password
+    // Update user's password
     await user.updatePassword(newPassword);
 
-    return await user.save();
+    // Save user to the DB
+    await user.save();
+
+    return user;
   } catch (err) {
     throw err;
   }
@@ -259,22 +267,27 @@ module.exports.sendNotification = async (
   callback
 ) => {
   try {
-    // Find users and map them to an array of device tokens.
+    // Find users with the given IDs
     const users = await User.find({ _id: { $in: userIds } });
-    const tokens = users.map((user) => {
+
+    // Map users array to an array of device tokens
+    const deviceTokens = users.map(async (user) => {
       // Add the notification to user's notifications array
-      // Save the user to the database
       user.addNotification(title, body, data);
-      user.save();
+
+      // Save the user to the database
+      await user.save();
 
       return user.deviceToken;
     });
 
+    // Asking notifications service to send a notification
+    // to the given users
     notificationsService.sendPushNotification(
       title,
       body,
       data,
-      tokens,
+      deviceTokens,
       callback
     );
 
@@ -286,18 +299,21 @@ module.exports.sendNotification = async (
 
 module.exports.seeNotifications = async (user) => {
   try {
-    // Check all user's notifications
+    // Check all of user's notifications
     const isAllSeen = user.seeNotifications();
 
-    // Throw an error in case of all user's notifications
-    // are already seen
+    // Throw an error if all of user's notifications
+    // are already marked as seen
     if (isAllSeen) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.user.notificationsSeen;
       throw new ApiError(statusCode, message);
     }
 
-    // Save the user
+    // Save user to the DB
+    //
+    // Because the `user.seeNotifications()` function marks all of
+    // user's notifications as seen.
     await user.save();
 
     // Return user's notifications
@@ -309,17 +325,17 @@ module.exports.seeNotifications = async (user) => {
 
 module.exports.clearNotifications = async (user) => {
   try {
-    // Clear notifications
+    // Clear user's notifications
     const isEmpty = user.clearNotifications();
 
-    // Check if notifications are empty
+    // Check if user's notifications list is empty
     if (isEmpty) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.user.noNotifications;
       throw new ApiError(statusCode, message);
     }
 
-    // Save the user
+    // Save user to the DB
     await user.save();
 
     // Return user's notifications
@@ -341,9 +357,12 @@ module.exports.changeUserRole = async (emailOrPhone, role) => {
     }
 
     // Update user's role
-    user.role = role;
+    user.udpateRole(role);
 
-    return await user.save();
+    // Save user to the DB
+    await user.save();
+
+    return user;
   } catch (err) {
     throw err;
   }
@@ -351,7 +370,7 @@ module.exports.changeUserRole = async (emailOrPhone, role) => {
 
 module.exports.verifyUser = async (emailOrPhone) => {
   try {
-    // Check if used exists
+    // Check if user exists
     const user = await this.findUserByEmailOrPhone(emailOrPhone);
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
@@ -360,17 +379,22 @@ module.exports.verifyUser = async (emailOrPhone) => {
     }
 
     // Check if user's email and phone are already verified
-    if (user.verified.email && user.verified.phone) {
+    if (user.isEmailVerified() && user.isPhoneVerified()) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.user.alreadyVerified;
       throw new ApiError(statusCode, message);
     }
 
-    // Verify user's email and phone
+    // Verify user's email
     user.verifyEmail();
+
+    // Verify user's phone
     user.verifyPhone();
 
-    return await user.save();
+    // Save user to the DB
+    await user.save();
+
+    return user;
   } catch (err) {
     throw err;
   }
@@ -385,7 +409,7 @@ module.exports.updateUserProfile = async (
   avatar
 ) => {
   try {
-    // Checking if user exists
+    // Check if user exists
     const user = await this.findUserByEmailOrPhone(emailOrPhone);
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
@@ -411,28 +435,36 @@ const updateUserProfile = async (user, body) => {
   try {
     const { name, avatar, email, phone, lang } = body;
 
-    // To store data changes
+    // To store changes
     const changes = [];
 
-    // Updating name when there's new name
+    // Update user's name when there's new name
     if (name && user.name !== name) {
+      // Update user's name
       user.name = name;
+
+      // Add user's name to changes
       changes.push("name");
     }
 
     // Updating avatar when there's new avatar
     if (avatar) {
+      // Store new user's avatar locally
       const file = await localStorage.storeFile(avatar);
+
+      // Delete local user's old avatar
       await localStorage.deleteFile(user.avatarURL);
+
+      // Update user's avatar URL
       user.avatarURL = file.path;
+
+      // Add user's avatar to changes
       changes.push("avatarURL");
     }
 
-    // Updating email, setting email as not verified,
-    // update email verification code, and sending
-    // email verification code to user's email
+    // Update user's email when there's new email
     if (email && user.email !== email) {
-      // Checking if email used
+      // Check if email is already used by another user
       const emailUsed = await this.findUserByEmailOrPhone(email);
       if (emailUsed) {
         const statusCode = httpStatus.NOT_FOUND;
@@ -440,23 +472,29 @@ const updateUserProfile = async (user, body) => {
         throw new ApiError(statusCode, message);
       }
 
-      // Updating email, setting email as not verified,
-      // update email verification code, and sending
-      // email verification code to user's email
+      // Update user's email
       user.email = email;
+
+      // Mark user's email as not verified
       user.verified.email = false;
+
+      // Add user's email to changes
       changes.push("email");
+
+      // Update user's email verification code
       user.updateCode("email");
-      await emailService.changeEmail(lang, email, user);
+
+      // Send an email to user's new email including email verification code
+      await emailService.sendChangeEmail(lang, email, user);
     }
 
-    // Updating phone, setting phone as not verified,
-    // update phone verification code, and sending
-    // phone verification code to user's phone
+    // Check if user's email matches new email
     const isPhoneEqual =
       user.phone.icc === phone?.icc && user.phone.nsn === phone?.nsn;
+
+    // Update user's phone when there's new phone
     if (phone && !isPhoneEqual) {
-      // Checking if phone used
+      // Check if phone is already used by another user
       const fullPhone = `${phone.icc}${phone.nsn}`;
       const phoneUsed = await this.findUserByEmailOrPhone(fullPhone);
       if (phoneUsed) {
@@ -465,28 +503,34 @@ const updateUserProfile = async (user, body) => {
         throw new ApiError(statusCode, message);
       }
 
-      // Updating email, setting email as not verified,
-      // update email verification code, and sending
-      // email verification code to user's email
+      // Update user's phone
       user.phone = {
         full: `${phone.icc}${phone.nsn}`,
         icc: phone.icc,
         nsn: phone.nsn,
       };
+
+      // Mark user's phone as not verified
       user.verified.phone = false;
+
+      // Add user's phone to changes
       changes.push("phone");
+
+      // Update user's phone verification code
       user.updateCode("phone");
 
       // TODO: send phone verification code to user's email.
     }
 
+    // Check if nothing has changes
     if (!changes.length) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.user.notUpdated;
       throw new ApiError(statusCode, message);
     }
 
-    user = await user.save();
+    // Save user to the DB
+    await user.save();
 
     return { newUser: user, changes };
   } catch (err) {

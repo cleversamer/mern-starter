@@ -1,10 +1,23 @@
 const commonMiddleware = require("../common");
 
+const isAuthValidator = [
+  commonMiddleware.putQueryParamsInBody,
+  commonMiddleware.conditionalCheck(
+    "deviceToken",
+    commonMiddleware.checkDeviceToken
+  ),
+  commonMiddleware.next,
+];
+
 const loginValidator = [
   commonMiddleware.checkEmailOrPhone,
   commonMiddleware.checkPassword,
-  commonMiddleware.checkDeviceToken,
-  commonMiddleware.next,
+  commonMiddleware.conditionalCheck(
+    "deviceToken",
+    commonMiddleware.checkDeviceToken
+  ),
+  commonMiddleware.checkAuthType,
+  commonMiddleware.authTypeHandler,
 ];
 
 const registerValidator = [
@@ -14,8 +27,12 @@ const registerValidator = [
   commonMiddleware.checkPhone,
   commonMiddleware.checkPassword,
   commonMiddleware.checkRole(true),
-  commonMiddleware.checkDeviceToken,
-  commonMiddleware.next,
+  commonMiddleware.conditionalCheck(
+    "deviceToken",
+    commonMiddleware.checkDeviceToken
+  ),
+  commonMiddleware.checkAuthType,
+  commonMiddleware.authTypeHandler,
 ];
 
 const changePasswordValidator = [
@@ -50,6 +67,7 @@ const resendCodeValidator = [
 ];
 
 module.exports = {
+  isAuthValidator,
   loginValidator,
   registerValidator,
   changePasswordValidator,

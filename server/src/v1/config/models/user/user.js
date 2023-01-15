@@ -1,10 +1,10 @@
 module.exports = {
   name: { minLength: 8, maxLength: 64 },
-  email: { minLength: 5, maxLength: 256 },
+  email: { minLength: 6, maxLength: 256 },
   phone: {
     nsn: { minLength: 4, maxLength: 13 },
   },
-  deviceToken: { minLength: 1, maxLength: 1024 },
+  deviceToken: { minLength: 0, maxLength: 1024, default: "" },
   // First role in this array === default role
   roles: ["user", "admin"],
   registerRoles: ["user"],

@@ -7,6 +7,7 @@ const countriesData = require("../../data/countries");
 
 const clientSchema = [
   "_id",
+  "authType",
   "avatarURL",
   "name",
   "email",
@@ -94,6 +95,14 @@ const userSchema = new Schema(
       trim: true,
       default: "",
     },
+    // How user joined to the system
+    authType: {
+      type: String,
+      required: true,
+      trim: true,
+      enum: validation.authTypes,
+      default: validation.authTypes[0],
+    },
     // The role of the user
     role: {
       type: String,
@@ -120,10 +129,10 @@ const userSchema = new Schema(
     // The device token of user's phone
     deviceToken: {
       type: String,
-      required: true,
       trim: true,
       minLength: validation.deviceToken.minLength,
       maxLength: validation.deviceToken.maxLength,
+      default: validation.deviceToken.default,
     },
     // The last login date of the user
     lastLogin: {
@@ -226,6 +235,20 @@ userSchema.methods.updateCode = function (key) {
 
     // Update email verification code
     this.verification[key] = { code, expiryDate };
+  } catch (err) {
+    // TODO: write the error to the database
+  }
+};
+
+userSchema.methods.udpateRole = function (role) {
+  try {
+    // Check if `role` arg is a valid role
+    const isValid = typeof role === "string" && validation.roles.includes(role);
+
+    // Update user's role if it's a valid role
+    if (isValid) {
+      this.role = role;
+    }
   } catch (err) {
     // TODO: write the error to the database
   }

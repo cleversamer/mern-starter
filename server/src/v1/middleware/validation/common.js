@@ -19,6 +19,31 @@ const next = (req, res, next) => {
   next();
 };
 
+const authTypeHandler = (req, res, next) => {
+  const errors = validationResult(req);
+  let errorsArray = errors.array();
+  const { authType } = req.body;
+  if (authType === "google") {
+    errorsArray = errorsArray.filter(
+      (err) => err.param === "authType" || err.param === "phone"
+    );
+  }
+
+  if (errorsArray.length) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.array()[0].msg;
+    const error = new ApiError(statusCode, message);
+    return next(error);
+  }
+
+  next();
+};
+
+const checkAuthType = check("authType")
+  .trim()
+  .isIn(userValidation.authTypes)
+  .withMessage(errors.auth.invalidAuthType);
+
 const putQueryParamsInBody = (req, res, next) => {
   req.body = {
     ...req.body,
@@ -30,6 +55,9 @@ const putQueryParamsInBody = (req, res, next) => {
 };
 
 const checkDeviceToken = check("deviceToken")
+  .isString()
+  .withMessage(errors.auth.invalidDeviceToken)
+  .bail()
   .isLength({
     min: userValidation.deviceToken.minLength,
     max: userValidation.deviceToken.maxLength,
@@ -196,6 +224,8 @@ const checkSendTo = check("sendTo")
 
 module.exports = {
   next,
+  authTypeHandler,
+  checkAuthType,
   putQueryParamsInBody,
   checkPhone,
   conditionalCheck,

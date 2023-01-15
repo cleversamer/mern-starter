@@ -52,7 +52,7 @@ module.exports = Object.freeze({
     ar: "رقم الهاتف مستخدم مسبقًا",
   },
   incorrectCredentials: {
-    en: "Incorrect credentials",
+    en: "Incorrect login credentials",
     ar: "بيانات الدخول غير صحيحة",
   },
   incorrectOldPassword: {
@@ -68,8 +68,8 @@ module.exports = Object.freeze({
     ar: `الإسم يجب أن يكون بين ${name.minLength}-${name.maxLength} حرفًا`,
   },
   invalidEmail: {
-    en: `Email should be valid and ${email.minLength}-${email.maxLength}`,
-    ar: `البريد الإلكرتروني يجب أن يكون بريد صالح بين ${email.minLength}-${email.maxLength} حرفًا`,
+    en: `Email should be a valid email and is between ${email.minLength}-${email.maxLength} characters length`,
+    ar: `البريد الإلكتروني يجب أن يكون بريد صالح وطوله بين ${email.minLength}-${email.maxLength} حرفًا`,
   },
   invalidEmailOrPhone: {
     en: "Invalid email or phone number",
@@ -102,5 +102,17 @@ module.exports = Object.freeze({
   invalidDeviceToken: {
     en: `Device token should be ${deviceToken.minLength}-${deviceToken.maxLength} characters length`,
     ar: `معرّف الجهاز يجب أن يكون بين ${deviceToken.minLength}-${deviceToken.maxLength} حرفًا`,
+  },
+  invalidGoogleToken: {
+    en: "There's an issue with your google mail",
+    ar: "يوجد هناك مشكلة في بريد جوجل الخاص بك",
+  },
+  googleAuthError: {
+    en: "Google authentication is temporarily disabled",
+    ar: "تم تعطيل مصادقة جوجل مؤقتًا",
+  },
+  invalidAuthType: {
+    en: "Auth type should be either email or google",
+    ar: "نوع المصادقة يجب أن يكون إما عبر البريد أو جوجل",
   },
 });

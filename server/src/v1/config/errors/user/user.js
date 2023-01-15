@@ -16,7 +16,7 @@ module.exports = Object.freeze({
     ar: "تم التحقق من رقم هاتفك مسبقًا",
   },
   invalidRole: {
-    en: "Invalid user role",
+    en: "Selected role is invalid",
     ar: "الصلاحيّة المختارة غير صالحة",
   },
   foundWithInvalidRole: {
@@ -40,7 +40,7 @@ module.exports = Object.freeze({
     ar: "نوع المستقبل غير مدعوم",
   },
   notUpdated: {
-    en: "There's no new data to update",
+    en: "There are no new data to update",
     ar: "لا يوجد بيانات جديدة للتحديث",
   },
   notificationsSeen: {

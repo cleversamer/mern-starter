@@ -1,9 +1,9 @@
 const { User } = require("../../models/user/user.model");
-const bcrypt = require("bcrypt");
 const { ApiError } = require("../../middleware/apiError");
 const httpStatus = require("http-status");
 const errors = require("../../config/errors");
 const usersService = require("./users.service");
+const googleService = require("../messaging/google.service");
 
 module.exports.register = async (
   email,
@@ -11,35 +11,101 @@ module.exports.register = async (
   name,
   phone,
   role,
+  deviceToken,
+  authType,
+  googleToken
+) => {
+  try {
+    if (authType === "email") {
+      return await registerWithEmailOrPhone(
+        name,
+        email,
+        phone,
+        password,
+        role,
+        deviceToken
+      );
+    } else {
+      return await registerWithGoogle(googleToken, phone, role);
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.login = async (emailOrPhone, password, deviceToken) => {
+  try {
+    // Asking service to find a user by their email or phone
+    const user = await usersService.findUserByEmailOrPhone(emailOrPhone);
+
+    // Check if user exist
+    if (!user) {
+      const statusCode = httpStatus.FORBIDDEN;
+      const message = errors.auth.incorrectCredentials;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Decoding user's password and comparing it with the password argument
+    const isCorrectPassword = await user.comparePassword(password);
+    if (!isCorrectPassword) {
+      const statusCode = httpStatus.FORBIDDEN;
+      const message = errors.auth.incorrectCredentials;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Update user's last login date
+    user.updateLastLogin();
+
+    // Update user's device token
+    user.deviceToken = deviceToken || user.deviceToken;
+
+    // Save user to the DB
+    await user.save();
+
+    return user;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const registerWithEmailOrPhone = async (
+  name,
+  email,
+  phone,
+  password,
+  role,
   deviceToken
 ) => {
   try {
-    // Hashing password
-    const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash(password, salt);
-
     // Creating user instance
     const user = new User({
       name,
       email,
-      password: hashed,
       phone: {
         full: `${phone.icc}${phone.nsn}`,
         icc: phone.icc,
         nsn: phone.nsn,
       },
       role,
-      deviceToken,
+      deviceToken: deviceToken || "",
     });
 
-    // Updating verification codes to be sent to the user
+    // Set user's password
+    await user.updatePassword(password);
+
+    // Set a verification code for user's email
     user.updateCode("email");
+
+    // Set a verification code for user's phone
     user.updateCode("phone");
 
-    return await user.save();
+    // Save user to the DB
+    await user.save();
+
+    return user;
   } catch (err) {
     if (err.code === errors.codes.duplicateIndexKey) {
-      const statusCode = httpStatus.BAD_REQUEST;
+      const statusCode = httpStatus.FORBIDDEN;
       const message = errors.auth.emailOrPhoneUsed;
       err = new ApiError(statusCode, message);
     }
@@ -48,28 +114,38 @@ module.exports.register = async (
   }
 };
 
-module.exports.login = async (email, password, deviceToken) => {
+const registerWithGoogle = async (googleToken, phone, role) => {
   try {
-    const user = await usersService.findUserByEmailOrPhone(email);
+    // Get the user data via google token
+    const googleUser = await googleService.decodeToken(googleToken);
 
-    // Check if user exist
-    if (!user) {
-      const statusCode = httpStatus.NOT_FOUND;
-      const message = errors.auth.incorrectCredentials;
-      throw new ApiError(statusCode, message);
+    // Check if there is a user registered with the specified email
+    const registeredUser = await usersService.findUserByEmailOrPhone(
+      googleUser.email
+    );
+
+    // Return the registered user if exists
+    if (registeredUser) {
+      return registeredUser;
     }
 
-    // Decoding user's password and comparing it with the password argument
-    if (!(await user.comparePassword(password))) {
-      const statusCode = httpStatus.UNAUTHORIZED;
-      const message = errors.auth.incorrectCredentials;
-      throw new ApiError(statusCode, message);
-    }
+    // Create an instance of the User model
+    const newUser = new User({
+      email: googleUser.email,
+      name: googleUser.name,
+      phone,
+      verified: {
+        email: true,
+        phone: false,
+      },
+      authType: "google",
+      role,
+    });
 
-    user.updateLastLogin();
-    user.deviceToken = deviceToken;
+    // Save the user to the DB
+    await newUser.save();
 
-    return await user.save();
+    return newUser;
   } catch (err) {
     throw err;
   }

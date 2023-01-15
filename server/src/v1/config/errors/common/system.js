@@ -26,12 +26,12 @@ module.exports = Object.freeze({
     ar: "من فضلك قم بإدخال رابط صالح",
   },
   invalidExtension: {
-    en: "File extension is not supported",
+    en: "File's extension is not supported",
     ar: "إمتداد الملف غير مدعوم",
   },
   invalidMongoId: {
     en: "Invalid ID",
-    ar: "معرّف غير صالح",
+    ar: "المعرّف غير صالح",
   },
   noMongoId: {
     en: "You should add the ID",
@@ -48,5 +48,9 @@ module.exports = Object.freeze({
   notification: {
     en: "Error sending notification",
     ar: "حصل خطأ عند إرسال الإشعار",
+  },
+  emailError: {
+    en: "Error sending email",
+    ar: "حصل خطأ في إرسال البريد",
   },
 });

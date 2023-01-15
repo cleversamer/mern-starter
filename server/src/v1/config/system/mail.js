@@ -1,7 +1,7 @@
 const Mailgen = require("mailgen");
 
 const auth = {
-  user: "taxilenapp@gmail.com",
+  user: "thedev.samer@gmail.com",
   password: process.env["EMAIL_PRIVATE_KEY"],
   emailURL: "http://192.168.1.235:4000/",
   siteDomains: {
